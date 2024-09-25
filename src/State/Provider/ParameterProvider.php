@@ -73,7 +73,8 @@ final class ParameterProvider implements ProviderInterface
 
             if (\is_callable($provider)) {
                 if (($op = $provider($parameter, $values, $context)) instanceof Operation) {
-                    $operation = $op;
+                    $context['operation'] = $op;
+                    $context = array_merge($context, $op->getNormalizationContext() ?? []);
                 }
 
                 continue;
@@ -86,15 +87,16 @@ final class ParameterProvider implements ProviderInterface
             /** @var ParameterProviderInterface $providerInstance */
             $providerInstance = $this->locator->get($provider);
             if (($op = $providerInstance->provide($parameter, $values, $context)) instanceof Operation) {
-                $operation = $op;
+                $context['operation'] = $op;
+                $context = array_merge($context, $op->getNormalizationContext() ?? []);
             }
         }
 
         if ($parameters) {
             $operation = $operation->withParameters($parameters);
+            $context['operation'] = $operation;
         }
         $request?->attributes->set('_api_operation', $operation);
-        $context['operation'] = $operation;
 
         return $this->decorated?->provide($operation, $uriVariables, $context);
     }
